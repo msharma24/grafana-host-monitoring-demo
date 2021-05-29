@@ -1,0 +1,95 @@
+#!/bin/bash -e
+
+cd "$(dirname "$0")"
+basedir="$(pwd)"
+
+function temp-dir {
+    mktemp -d /tmp/XXXXXX
+}
+
+function confirm {
+    read -p "$1. Ok? [yn] " -n 1
+    echo
+    if [[ "$REPLY" =~ ^[Yy]$ ]]; then
+        return 0
+    elif [[ "$REPLY" =~ ^[Nn]$ ]]; then
+        exit 1
+    else
+        confirm "$1"
+    fi
+}
+
+function check {
+    if [ $? -ne 0 ]; then
+        echo "Something went wrong, aborting! (exit code $?)"
+        exit 1
+    fi
+}
+
+case "$1" in
+export)
+    if [ -z "$2" ]; then
+        echo "Expected <tarfile> after 'export'" >&2
+        exit 1
+    fi
+
+    dir="$(temp-dir)"
+    cp -r Rakefile README.md Gemfile Gemfile.lock data lib spec "$dir"
+    cd "$dir"
+    git init --quiet
+    git add *
+    git commit --quiet --message "Initial commit of the coding test skeleton"
+    tar -czvf "$2" .
+    cd "$basedir"
+    cp "$dir/$2" .
+    rm -rf "$dir"
+    echo "Created $2"
+    exit 0
+    ;;
+import)
+    if [ -z "$2" ]; then
+        echo "Expected <tarfile> after 'import'" >&2
+        exit 1
+    fi
+
+    dir="$(temp-dir)"
+    cp "$2" "$dir"
+    cd "$dir"
+    tar -xzvpf "$2"
+    cd "$basedir"
+
+    branch_name="$2"
+    branch_name="${branch_name##*/}"
+    branch_name="${branch_name%%.*}"
+    confirm "Using branch name '$branch_name'"
+
+    git checkout -b "$branch_name"
+    git remote add --fetch "$branch_name" "${dir}/${branch_name}"
+    git merge --strategy ours --no-commit "$branch_name/master"
+    git read-tree --prefix="submitted_tests/$branch_name/" -u "$branch_name/master"
+    git commit --message "Merging $branch_name into submitted-tests/$branch_name"
+    git remote remove "$branch_name"
+
+    echo
+    echo "Imported!"
+    echo "Leaving you on branch '$branch_name'. Now push this to origin and open a pull request."
+    ;;
+*)
+    cat >&2 <<USAGE
+Usage: $0 <command> [<args>]
+
+Commands:
+    
+    export <tarfile>    Exports a coding test tar file with a fresh git
+                        repository so the candidate can start hacking on their
+                        solution right away.
+
+    import <tarfile>    Imports the completed coding test in <tarfile> to the
+                        repo. The branch the coding test will be imported to
+                        will be named according to the tar's filename, so if
+                        the tar file is called "joe-bloggs.tar", its contents
+                        will be imported to the "joe-bloggs" branch.
+
+USAGE
+    ;;
+esac

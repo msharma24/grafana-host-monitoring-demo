@@ -1,0 +1,6 @@
+{
+  "registry.terraform.io/grafana/grafana": {
+    "hash": "h1:oi0iTSPQQ/sO5oODtldz4OSk4HiBe1d6dIO4QVPevHA=",
+    "version": "1.7.0"
+  }
+}

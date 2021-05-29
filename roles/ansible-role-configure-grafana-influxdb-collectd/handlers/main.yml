@@ -1,0 +1,13 @@
+---
+# handlers file for ansible-role-configure-grafana-influxdb-collectd
+- name: restart influxdb
+  service:
+    name: influxdb
+    state: restarted
+  become: yes
+
+- name: restart collectd
+  service:
+    name: collectd
+    state: restarted
+  become: yes

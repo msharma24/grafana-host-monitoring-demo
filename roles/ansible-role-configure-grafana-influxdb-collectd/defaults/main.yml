@@ -1,0 +1,15 @@
+---
+# defaults file for ansible-role-configure-grafana-influxdb-collectd
+influxdb_version: 1.8.3-1
+influxdb_conf_file: /etc/influxdb/influxdb.conf
+influxdb_group: influxdb
+influxdb_http_port: 8086
+influxdb_ifql_port: 8082
+influxdb_rpc_port: 8088
+influxdb_udp_port: 8089
+influxdb_user: influxdb
+
+collectd_version: 5.7.2-2ubuntu1.2
+collectd_conf_file: /etc/collectd/collectd.conf
+
+grafana_server_version: 7.3.4

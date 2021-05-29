@@ -1,0 +1,87 @@
+---
+# tasks file for ansible-role-configure-grafana-influxdb-collectd
+- name: Install gnupg package for GPG Key management
+  apt:
+    name: gnupg
+    state: present
+    update_cache: yes
+
+- name: Install Collectd
+  apt:
+    name: collectd={{ collectd_version }}
+    state: present
+    update_cache: yes
+
+- name: Ensure Collectd is running and enabled on boot
+  service:
+    name: collectd
+    state: started
+    enabled: yes
+
+- name: Update Collectd Configuration file
+  template:
+    src: collectd.conf.j2
+    dest: '{{ collectd_conf_file }}'
+    validate: echo %s; collectd -t
+    owner: root
+    group: root
+    mode: '0644'
+    backup: yes
+  notify: restart collectd
+
+- name: Import InfluxDB GPG signing key
+  apt_key:
+    url: https://repos.influxdata.com/influxdb.key
+    state: present
+
+- name: Add InfluxDB repository
+  apt_repository:
+    repo: deb https://repos.influxdata.com/ubuntu trusty stable
+    state: present
+    filename: influxdb-repository
+    update_cache: true
+
+- name: Install the InfluxDB packages
+  apt:
+    name: influxdb={{ influxdb_version }}
+    state: present
+
+- name: Ensure InfluxDB is running and enabled on boot
+  service:
+    name: influxdb
+    state: started
+    enabled: yes
+
+- name: Update InfluxDB configuration file
+  template:
+    src: influxdb.conf.j2
+    dest: '{{ influxdb_conf_file }}'
+    validate: echo %s; influxd -config /etc/influxdb/influxdb.conf
+    backup: yes
+    owner: 'root'
+    group: 'root'
+    mode: '0644'
+  notify: restart influxdb
+
+- name: Import Grafana GPG signing key
+  apt_key:
+    url: https://packages.grafana.com/gpg.key
+    state: present
+
+- name: Add Grafana repository into sources list
+  apt_repository:
+    repo: deb https://packages.grafana.com/oss/deb stable main
+    state: present
+    filename: grafana-repository
+    update_cache: yes
+
+- name: Install Grafana Server
+  apt:
+    name: grafana={{ grafana_server_version }}
+    state: present
+
+- name: Ensure grafana is running and enabled to start on boot
+  service:
+    name: grafana-server
+    state: started
+    enabled: yes
